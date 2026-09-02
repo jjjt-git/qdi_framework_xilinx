@@ -3,7 +3,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 library UNISIM;
 use UNISIM.VComponents.all;
 
-library ncl_gates;
+library qdi_framework;
 
 entity ncl2clk_fnull_dr is
 	generic (
@@ -81,7 +81,7 @@ begin
 			);
 	end generate mark_ki_vec;	
 		
-	comp: entity ncl_gates.completion_loop
+	comp: entity qdi_framework.completion_loop
 		generic map (
 			width       => dr_width,
 			negated_out => false,
