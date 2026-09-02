@@ -1,7 +1,7 @@
 
 library IEEE;
-library ncl_gates;
 library qdi_framework;
+use qdi_framework.MACRO_CONFIG.all;
 
 use IEEE.STD_LOGIC_1164.ALL;
 
@@ -46,8 +46,10 @@ begin
 		
 		gates: for ii in ngates - 1 downto 0 generate
 			g4: if max_gate_inputs = 4 generate
-				gate: entity ncl_gates.TH44
-					port map (
+				gate: entity qdi_framework.fb_4
+					generic map (
+						ASSERT_SET => A5 and B5 and C5 and D5
+					) port map (
 						A => ko_vector(4 * ii),
 						B => ko_vector(4 * ii + 1),
 						C => ko_vector(4 * ii + 2),
@@ -57,8 +59,10 @@ begin
 			end generate;
 			
 			g5: if max_gate_inputs = 5 generate
-				gate: entity ncl_gates.TH55
-					port map (
+				gate: entity qdi_framework.fb_5
+					generic map (
+						ASSERT_SET => A5 and B5 and C5 and D5 and E5
+					) port map (
 						A => ko_vector(5 * ii),
 						B => ko_vector(5 * ii + 1),
 						C => ko_vector(5 * ii + 2),
@@ -95,15 +99,17 @@ begin
 			
 		ko <= not ko_neg when negated_out else ko_neg;
 	
-		gate: entity ncl_gates.TH55
-				port map (
-					A => ko_vector(0),
-					B => ko_vector(1),
-					C => ko_vector(2),
-					D => ko_vector(3),
-					E => ko_vector(4),
-					Z => ko_neg
-				);
+		gate: entity qdi_framework.fb_5
+			generic map (
+				ASSERT_SET => A5 and B5 and C5 and D5 and E5
+			) port map (
+				A => ko_vector(0),
+				B => ko_vector(1),
+				C => ko_vector(2),
+				D => ko_vector(3),
+				E => ko_vector(4),
+				Z => ko_neg
+			);
 	end generate;
 	
 	g4: if width = 4 generate
@@ -127,14 +133,16 @@ begin
 			
 		ko <= not ko_neg when negated_out else ko_neg;
 	
-		gate: entity ncl_gates.TH44
-				port map (
-					A => ko_vector(0),
-					B => ko_vector(1),
-					C => ko_vector(2),
-					D => ko_vector(3),
-					Z => ko_neg
-				);
+		gate: entity qdi_framework.fb_4
+			generic map (
+				ASSERT_SET => A5 and B5 and C5 and D5
+			) port map (
+				A => ko_vector(0),
+				B => ko_vector(1),
+				C => ko_vector(2),
+				D => ko_vector(3),
+				Z => ko_neg
+			);
 	end generate;
 	
 	g3: if width = 3 generate
@@ -158,13 +166,15 @@ begin
 			
 		ko <= not ko_neg when negated_out else ko_neg;
 	
-		gate: entity ncl_gates.TH33
-				port map (
-					A => ko_vector(0),
-					B => ko_vector(1),
-					C => ko_vector(2),
-					Z => ko_neg
-				);
+		gate: entity qdi_framework.fb_3
+			generic map (
+				ASSERT_SET => A5 and B5 and C5
+			) port map (
+				A => ko_vector(0),
+				B => ko_vector(1),
+				C => ko_vector(2),
+				Z => ko_neg
+			);
 	end generate;
 	
 	g2: if width = 2 generate
@@ -188,12 +198,14 @@ begin
 			
 		ko <= not ko_neg when negated_out else ko_neg;
 	
-		gate: entity ncl_gates.TH22
-				port map (
-					A => ko_vector(0),
-					B => ko_vector(1),
-					Z => ko_neg
-				);
+		gate: entity qdi_framework.fb_2
+			generic map (
+				ASSERT_SET => A5 and B5
+			) port map (
+				A => ko_vector(0),
+				B => ko_vector(1),
+				Z => ko_neg
+			);
 	end generate;
 	
 	g1: if width = 1 generate
