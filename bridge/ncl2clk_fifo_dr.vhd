@@ -9,19 +9,22 @@ library qdi_framework;
 
 entity ncl2clk_fifo_dr is
 	generic (
-		dr_width: integer := 2
+		dr_width   : integer := 2;
+		addr_width : integer := 2
 	);
 	port (
-		clk, rst: in std_logic;
-		dri_0, dri_1: in std_logic_vector(dr_width - 1 downto 0);
-		ko: out std_logic;
-		valid: out std_logic;
-		stall: in  std_logic;
-		dro: out std_logic_vector(dr_width - 1 downto 0)
+		clk, rst     : in std_logic;
+		dri_0, dri_1 : in std_logic_vector(dr_width - 1 downto 0);
+		ko           : out std_logic;
+		valid        : out std_logic;
+		stall        : in  std_logic;
+		dro          : out std_logic_vector(dr_width - 1 downto 0)
 	);
 end ncl2clk_fifo_dr;
 
 architecture Behavioural of ncl2clk_fifo_dr is
+	constant mem_depth : integer := 2 ** addr_width;
+
 	attribute NCL_WIRE_TYPE : string;
 	attribute DONT_TOUCH    : boolean;
 	attribute KEEP          : boolean;
@@ -37,11 +40,12 @@ architecture Behavioural of ncl2clk_fifo_dr is
 	
 	signal empty, full : std_logic;
 	
-	type buf_t is array (0 to 3) of std_logic_vector(dr_width - 1 downto 0);
+	type buf_t is array (0 to mem_depth - 1) of std_logic_vector(dr_width - 1 downto 0);
 	signal buf : buf_t;
 	
-	signal w_ptr, r_ptr : std_logic_vector(1 downto 0);
-	signal sync_meta, sync_stable : std_logic_vector(1 downto 0);
+	signal w_ptr, w_ptr_gray, w_ptr_next, w_ptr_gray_next : unsigned(addr_width - 1 downto 0);
+	signal r_ptr, r_ptr_gray, r_ptr_next : unsigned(addr_width - 1 downto 0);
+	signal sync_meta, sync_stable        : unsigned(addr_width - 1 downto 0);
 	
 	signal valid_int : std_logic;
 	
@@ -60,16 +64,16 @@ begin
 	valid <= valid_int;
 	
 	empty <=
-		'1' when sync_stable = r_ptr else
+		'1' when sync_stable = r_ptr_gray else
 		'0';
 		
 	full <=
-		'1' when w_ptr(0) & not w_ptr(1) = r_ptr else
+		'1' when w_ptr_gray_next = r_ptr_gray else
 		'0';
 	
 	ko_int <= not full and not ki; -- ki is internally inverted
 	
-	do  <= buf(to_integer(unsigned(r_ptr)));
+	do  <= buf(to_integer(r_ptr));
 	dro <= do;
 	
 	ko_mark: LUT1
@@ -120,10 +124,10 @@ begin
 	sync: process(clk) begin
 		if rising_edge(clk) then
 			if rst = '1' then
-				sync_meta   <= "00";
-				sync_stable <= "00";
+				sync_meta   <= (others => '0');
+				sync_stable <= (others => '0');
 			else
-				sync_meta   <= w_ptr;
+				sync_meta   <= w_ptr_gray;
 				sync_stable <= sync_meta;
 			end if;
 		end if;
@@ -131,15 +135,23 @@ begin
 	
 	di: process(ki_clk) begin
 		if rising_edge(ki_clk) then
-			buf(to_integer(unsigned(w_ptr))) <= dri_1;
+			buf(to_integer(w_ptr)) <= dri_1;
 		end if;
 	end process di;
+		
+	w_ptr_next <= w_ptr + 1;
+	r_ptr_next <= r_ptr + 1;
+	
+	w_ptr_gray <= w_ptr xor shift_right(w_ptr, 1);
+	r_ptr_gray <= r_ptr xor shift_right(r_ptr, 1);
+	
+	w_ptr_gray_next <= w_ptr_next xor shift_right(w_ptr_next, 1);
 	
 	handshake_ncl: process(ki_clk, rst) begin
 		if rst = '1' then
 			w_ptr <= (others => '0');
 		elsif rising_edge(ki_clk) then
-			w_ptr <= w_ptr(0) & not w_ptr(1);
+			w_ptr <= w_ptr_next;
 		end if;
 	end process handshake_ncl;
 	
@@ -148,7 +160,7 @@ begin
 			if rst = '1' then
 				r_ptr <= (others => '0');
 			elsif valid_int = '1' and stall = '0' then
-				r_ptr <= r_ptr(0) & not r_ptr(1);
+				r_ptr <= r_ptr_next;
 			end if;
 		end if;
 	end process handshake_clk;

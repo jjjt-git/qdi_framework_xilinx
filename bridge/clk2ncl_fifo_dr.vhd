@@ -8,19 +8,22 @@ use UNISIM.VComponents.all;
 
 entity clk2ncl_fifo_dr is
 	generic (
-		dr_width: integer := 2
+		dr_width   : integer := 2;
+		addr_width : integer := 2
 	);
 	port (
-		clk, rst: in std_logic;
-		dro_0, dro_1: out std_logic_vector(dr_width - 1 downto 0);
-		ki: in std_logic;
-		valid: in std_logic;
-		stall: out std_logic;
-		dri: in std_logic_vector(dr_width - 1 downto 0)
+		clk, rst     : in std_logic;
+		dro_0, dro_1 : out std_logic_vector(dr_width - 1 downto 0);
+		ki           : in std_logic;
+		valid        : in std_logic;
+		stall        : out std_logic;
+		dri          : in std_logic_vector(dr_width - 1 downto 0)
 	);
 end clk2ncl_fifo_dr;
 
 architecture Behavioural of clk2ncl_fifo_dr is
+	constant mem_depth : integer := 2 ** addr_width;
+
 	attribute NCL_WIRE_TYPE               : string;
 	attribute NCL_IN_ENC_DATA2VALID_EDGES : string;
 	attribute NCL_IN_ENC_VALID_PIN        : string;
@@ -38,13 +41,14 @@ architecture Behavioural of clk2ncl_fifo_dr is
 
 	signal empty, full : std_logic;
 
-	type buf_t is array (0 to 3) of std_logic_vector(dr_width - 1 downto 0);
+	type buf_t is array (0 to mem_depth - 1) of std_logic_vector(dr_width - 1 downto 0);
 	signal buf : buf_t;
 
 	signal d_r, do_0m, do_1m : std_logic_vector(dr_width - 1 downto 0);
 
-	signal w_ptr, r_ptr : std_logic_vector(1 downto 0);
-	signal sync_meta, sync_stable : std_logic_vector(1 downto 0);
+	signal w_ptr, w_ptr_gray, w_ptr_next, w_ptr_gray_next : unsigned(addr_width - 1 downto 0);
+	signal r_ptr, r_ptr_gray, r_ptr_next : unsigned(addr_width - 1 downto 0);
+	signal sync_meta, sync_stable        : unsigned(addr_width - 1 downto 0);
 
 	signal stall_int, ki_clk : std_logic;
 
@@ -62,21 +66,21 @@ begin
 	stall <= stall_int;
 
 	empty <=
-		'1' when w_ptr = r_ptr else
+		'1' when w_ptr_gray = r_ptr_gray else
 		'0';
 
 	full <=
-		'1' when w_ptr(0) & not w_ptr(1) = sync_stable else
+		'1' when w_ptr_gray_next = sync_stable else
 		'0';
 
 	stall_int <= full;
 
-	d_r <= buf(to_integer(unsigned(r_ptr)));
+	d_r <= buf(to_integer(r_ptr));
 
 	di: process(clk) begin
 		if falling_edge(clk) then
 			if valid = '1' and stall_int = '0' then
-				buf(to_integer(unsigned(w_ptr))) <= dri;
+				buf(to_integer(w_ptr)) <= dri;
 			end if;
 		end if;
 	end process di;
@@ -88,13 +92,21 @@ begin
 			I0 => ki,
 			O  => ki_clk
 		);
+		
+	w_ptr_next <= w_ptr + 1;
+	r_ptr_next <= r_ptr + 1;
+	
+	w_ptr_gray <= w_ptr xor shift_right(w_ptr, 1);
+	r_ptr_gray <= r_ptr xor shift_right(r_ptr, 1);
+	
+	w_ptr_gray_next <= w_ptr_next xor shift_right(w_ptr_next, 1);
 
 	handshake_clk: process(clk) begin
 		if rising_edge(clk) then
 			if rst = '1' then
 				w_ptr <= (others => '0');
 			elsif valid = '1' and stall_int = '0' then
-				w_ptr <= w_ptr(0) & not w_ptr(1);
+				w_ptr <= w_ptr_next;
 			end if;
 		end if;
 	end process handshake_clk;
@@ -103,17 +115,17 @@ begin
 		if rst = '1' then
 			r_ptr <= (others => '0');
 		elsif falling_edge(ki_clk) then
-			r_ptr <= r_ptr(0) & not r_ptr(1);
+			r_ptr <= r_ptr_next;
 		end if;
 	end process handshake_ncl;
 
 	sync: process(clk) begin
 		if rising_edge(clk) then
 			if rst = '1' then
-				sync_meta   <= "00";
-				sync_stable <= "00";
+				sync_meta   <= (others => '0');
+				sync_stable <= (others => '0');
 			else
-				sync_meta   <= r_ptr;
+				sync_meta   <= r_ptr_gray;
 				sync_stable <= sync_meta;
 			end if;
 		end if;
