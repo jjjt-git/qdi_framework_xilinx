@@ -18,8 +18,6 @@ foreach gate $simple_gates {
 		continue
 	}
 	
-	lappend route_work $ipin
-	
 	set_property IS_BEL_FIXED true $gate
 	
 	set net [get_nets -of $ipin]
@@ -44,6 +42,7 @@ foreach gate $simple_gates {
 			switch $bel {
 				A - D {
 					set_property LOCK_PINS "${fb}:A2" $gate
+					lappend route_work $ipin
 				}
 				B - C {
 					set_property LOCK_PINS "${fb}:A1" $gate
@@ -90,6 +89,15 @@ foreach gate $latch_rst_gates {
 			set_property LOCK_PINS "${fb}:A2" $gate
 		}
 	}
+}
+
+foreach pin $route_work {
+	route_design -pins $pin -delay
+	
+	set net [get_nets -of $pin]
+	
+	set_property FIXED_ROUTE [get_property ROUTE $net] $net
+	set_property IS_LOC_FIXED true [get_cells -of $pin]
 }
 
 #write_checkpoint -force /tmp/checkpoint_post_latch_rst.dcp

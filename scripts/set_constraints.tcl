@@ -1,4 +1,4 @@
-write_checkpoint -force /tmp/checkpoint.dcp
+#write_checkpoint -force /tmp/checkpoint.dcp
 
 # manage DRCs to improve readability
 
