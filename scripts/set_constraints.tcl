@@ -85,7 +85,7 @@ foreach cc $bridge {
 		set_false_path -through [get_pins -of $net -filter "!IS_LEAF"]
 	}
 }
-set_property DONT_TOUCH false $bridge
+if {[llength $bridge] > 0} {set_property DONT_TOUCH false $bridge}
 
 foreach cc $comp_clk_NCL2CLK {
 	set bridge [get_property PARENT $cc]
@@ -123,16 +123,16 @@ foreach cc $comp_clk_NCL2CLK {
 	group_path -name "NCL_BRIDGE_KI_CLK" -from $src_pins
 
 	create_clock -period [expr $fb_required_delay * 2] $ki_clk
-	
+
 	create_waiver -type METHODOLOGY -id {TIMING-13} -user {Jacob Tilger} -desc {Bridges and ACK require hard timed paths.} -objects $src_pins -tags QDI
 	create_waiver -type METHODOLOGY -id {TIMING-3}  -user {Jacob Tilger} -desc {Bridges generate local clocks.} -objects [get_pins $cc/O] -tags QDI
-	
+
 	create_waiver -type DRC -id {PDRC-153} -user {Jacob Tilger} -desc {Bridges generate local clocks.} -objects [get_nets -segments -of [get_pins $cc/I]] -tags QDI
 
 	set cdc_sync [get_cells -filter "ASYNC_REG && PARENT == $bridge" -leaf]
 
 	set_false_path -from [get_clocks -of $ki_clk] -to $cdc_sync
-	set_false_path -to [get_clocks -of $ki_clk] 
+	set_false_path -to [get_clocks -of $ki_clk]
 
 	set_max_delay -datapath_only [get_property PERIOD [get_clocks -of $cdc_sync]] -from $di_trg
 
@@ -147,11 +147,11 @@ foreach cc $comp_clk_CLK2NCL {
 	set ki_src [get_pins -of [get_nets -segments -of [get_pins -filter "DIRECTION == IN" -of $cc]] -filter "IS_LEAF && DIRECTION == OUT"]
 
 	create_clock -period [expr $fb_required_delay * 2] $ki_clk
-	
+
 	create_waiver -type METHODOLOGY -id {TIMING-2}  -user {Jacob Tilger} -desc {Bridges generate local clocks.} -objects [get_pins $cc/O] -tags QDI
 	create_waiver -type METHODOLOGY -id {TIMING-14} -user {Jacob Tilger} -desc {CLK2NCL has only a single Gray-CTR on ki-clk and uses a LUT as buffer to preserve clock-network resources.} -objects $cc -tags QDI
 	create_waiver -type METHODOLOGY -id {TIMING-13} -user {Jacob Tilger} -desc {CLK2NCL needs forced skew on ki-clk path.} -objects [get_pins $cc/I0] -tags QDI
-	
+
 	create_waiver -type DRC -id {PDRC-153}    -user {Jacob Tilger} -desc {Bridges generate local clocks.} -objects [get_nets -segments -of [get_pins $cc/O]] -tags QDI
 	create_waiver -type DRC -id {PLHOLDVIO-2} -user {Jacob Tilger} -desc {CLK2NCL has only a single Gray-CTR on ki-clk and uses a LUT as buffer to preserve clock-network resources.} -objects $cc -tags QDI
 
@@ -282,7 +282,7 @@ foreach cc $ack {
 	# add constraints
 
 	set_min_delay $fb_required_delay -from $ack_src -to $ack_snk
-	
+
 	create_waiver -type METHODOLOGY -id {TIMING-13} -user {Jacob Tilger} -desc {Bridges and ACK require hard timed paths.} -objects [get_pins -of $pc] -tags QDI
 
 	group_path -name "NCL_ACK_FB" -from $ack_src -to $ack_snk
@@ -302,7 +302,7 @@ create_property -type string QDI_ISOFORK_GRPS  pin
 create_property -type bool   QDI_ISOFORK       pin
 create_property -type bool   QDI_ISOFORK_COLOC cell
 
-set_property DONT_TOUCH false $isoforks
+if {[llength $isoforks] > 0} {set_property DONT_TOUCH false $isoforks}
 
 set isofork_lut []
 
@@ -315,7 +315,7 @@ foreach cc $isoforks {
 		set grp [set_add $grp $isofork_id]
 		set_property QDI_ISOFORK_GRPS  $grp  $tt
 	}
-	
+
 	set_property QDI_ISOFORK       true  $trgs
 	set_property QDI_ISOFORK_COLOC false [get_cells -of $trgs]
 
@@ -434,5 +434,7 @@ foreach isoset $isofork_lut {
 }
 # end isofork constraints
 
-set_property DONT_TOUCH false $markers
-remove_cell $markers
+if {[llength $markers] > 0} {
+	set_property DONT_TOUCH false $markers
+	remove_cell $markers
+}
