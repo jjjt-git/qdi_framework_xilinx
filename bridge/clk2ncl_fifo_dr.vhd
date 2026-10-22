@@ -1,3 +1,7 @@
+-- Framework for implementation of QDI logic on Xilinx 7 Series FPGAs
+-- Copyright (C) 2026 Jacob Tilger
+-- This Code is licensed under GPL version 3
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use ieee.numeric_std.all;
@@ -35,7 +39,7 @@ architecture Behavioural of clk2ncl_fifo_dr is
 	attribute ASYNC_REG  : boolean;
 	attribute KEEP       : boolean;
 	attribute HLUTNM     : string;
-	
+
 	attribute KEEP_HIERARCHY : string;
 	attribute KEEP_HIERARCHY of Behavioural : architecture is "TRUE";
 
@@ -92,13 +96,13 @@ begin
 			I0 => ki,
 			O  => ki_clk
 		);
-		
+
 	w_ptr_next <= w_ptr + 1;
 	r_ptr_next <= r_ptr + 1;
-	
+
 	w_ptr_gray <= w_ptr xor shift_right(w_ptr, 1);
 	r_ptr_gray <= r_ptr xor shift_right(r_ptr, 1);
-	
+
 	w_ptr_gray_next <= w_ptr_next xor shift_right(w_ptr_next, 1);
 
 	handshake_clk: process(clk) begin

@@ -1,3 +1,7 @@
+-- Framework for implementation of QDI logic on Xilinx 7 Series FPGAs
+-- Copyright (C) 2026 Jacob Tilger
+-- This Code is licensed under GPL version 3
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 library UNISIM;
@@ -18,24 +22,24 @@ end fb_5_rst;
 architecture Structural of fb_5_rst is
 	attribute DONT_TOUCH                    : boolean;
 	attribute DONT_TOUCH of NCL_GATE_EXTRST : label is true;
-	
+
 	attribute KEEP_HIERARCHY : string;
 	attribute KEEP_HIERARCHY of Structural : architecture is "SOFT";
-	
+
 	constant FB_VALUE     : bit_vector(63 downto 0) := x"FFFF_FFFF_0000_0000"; -- I5 is FB
 	constant CLEAR_F_SET  : bit_vector(63 downto 0) := CLEAR_SET & CLEAR_SET;
 	constant ASSERT_F_SET : bit_vector(63 downto 0) := ASSERT_SET & ASSERT_SET;
-	
+
 	constant CONFIG : bit_vector(63 downto 0) := ASSERT_F_SET or (not CLEAR_F_SET and FB_VALUE);
-	
+
 	signal output, output_i : std_logic;
-	
+
 	attribute RLOC : string;
 	attribute RLOC of NCL_GATE_EXTRST : label is "X0Y0";
 begin
 
 	Z <= transport output after 1 ns;
-	
+
 	NCL_GATE_EXTRST: LUT6
 		generic map (
 			INIT => CONFIG
@@ -48,7 +52,7 @@ begin
 			I5 => output,
 			O  => output_i
 		);
-	
+
 	RST_N: if RST_VALUE = '0' generate
 		attribute RLOC of NCL_EXTRST       : label is "X0Y0";
 		attribute DONT_TOUCH of NCL_EXTRST : label is true;
@@ -84,5 +88,5 @@ begin
 				GE  => '1'
 			);
 	end generate;
-	
+
 end Structural;

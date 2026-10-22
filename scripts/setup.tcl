@@ -1,3 +1,7 @@
+# Framework for implementation of QDI logic on Xilinx 7 Series FPGAs
+# Copyright (C) 2026 Jacob Tilger
+# This Code is licensed under GPL version 3
+
 set dir [file dirname [file normalize [info script]]]
 
 # add scripts

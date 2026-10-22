@@ -1,3 +1,7 @@
+# Framework for implementation of QDI logic on Xilinx 7 Series FPGAs
+# Copyright (C) 2026 Jacob Tilger
+# This Code is licensed under GPL version 3
+
 # get all the individual feedback pins
 set ncl_feedback_p0 [get_pins -of_objects [get_cells -hierarchical {NCL_GATE_FB0}] -filter {REF_PIN_NAME=~I0}]
 set ncl_feedback_p1 [get_pins -of_objects [get_cells -hierarchical {NCL_GATE_FB1}] -filter {REF_PIN_NAME=~I1}]

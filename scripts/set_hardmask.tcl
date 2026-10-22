@@ -1,3 +1,7 @@
+# Framework for implementation of QDI logic on Xilinx 7 Series FPGAs
+# Copyright (C) 2026 Jacob Tilger
+# This Code is licensed under GPL version 3
+
 #write_checkpoint -force /tmp/checkpoint.dcp
 
 set route_work ""

@@ -1,3 +1,6 @@
+-- Framework for implementation of QDI logic on Xilinx 7 Series FPGAs
+-- Copyright (C) 2026 Jacob Tilger
+-- This Code is licensed under GPL version 3
 
 library IEEE;
 library qdi_framework;
@@ -22,13 +25,13 @@ entity completion_loop is
 end completion_loop;
 
 architecture Structural of completion_loop is
-	
+
 	constant owidth : integer := (width - (width mod max_gate_inputs)) / max_gate_inputs + (width mod max_gate_inputs);
 	constant ngates : integer := (width - (width mod max_gate_inputs)) / max_gate_inputs;
 begin
 
 	assert max_gate_inputs = 4 or max_gate_inputs = 5 report "Please select 4 or 5-input gates" severity FAILURE;
-	
+
 	multi: if width > max_gate_inputs generate
 		signal next_stage : std_logic_vector(owidth - 1 downto 0);
 	begin
@@ -43,7 +46,7 @@ begin
 				ko_vector => next_stage,
 				ko => ko
 			);
-		
+
 		gates: for ii in ngates - 1 downto 0 generate
 			g4: if max_gate_inputs = 4 generate
 				gate: entity qdi_framework.fb_4
@@ -57,7 +60,7 @@ begin
 						Z => next_stage(ii)
 					);
 			end generate;
-			
+
 			g5: if max_gate_inputs = 5 generate
 				gate: entity qdi_framework.fb_5
 					generic map (
@@ -72,12 +75,12 @@ begin
 					);
 			end generate;
 		end generate;
-		
+
 		remainder: if width mod max_gate_inputs /= 0 generate
 			next_stage(owidth - 1 downto ngates) <= ko_vector(width - 1 downto ngates * max_gate_inputs);
 		end generate;
 	end generate;
-	
+
 	g5: if width = 5 and max_gate_inputs = 5 generate
 		signal ko_neg : std_logic;
 	begin
@@ -85,7 +88,7 @@ begin
 		mark: if mark_ko generate
 			attribute NCL_WIRE_TYPE : string;
 			attribute NCL_WIRE_TYPE of ko_mark : label is "ACK";
-			
+
 			attribute DONT_TOUCH : boolean;
 			attribute DONT_TOUCH of ko_mark : label is true;
 		begin
@@ -96,9 +99,9 @@ begin
 					I0 => ko_neg
 				);
 		end generate;
-			
+
 		ko <= not ko_neg when negated_out else ko_neg;
-	
+
 		gate: entity qdi_framework.fb_5
 			generic map (
 				ASSERT_SET => A5 and B5 and C5 and D5 and E5
@@ -111,7 +114,7 @@ begin
 				Z => ko_neg
 			);
 	end generate;
-	
+
 	g4: if width = 4 generate
 		signal ko_neg : std_logic;
 	begin
@@ -119,7 +122,7 @@ begin
 		mark: if mark_ko generate
 			attribute NCL_WIRE_TYPE : string;
 			attribute NCL_WIRE_TYPE of ko_mark : label is "ACK";
-			
+
 			attribute DONT_TOUCH : boolean;
 			attribute DONT_TOUCH of ko_mark : label is true;
 		begin
@@ -130,9 +133,9 @@ begin
 					I0 => ko_neg
 				);
 		end generate;
-			
+
 		ko <= not ko_neg when negated_out else ko_neg;
-	
+
 		gate: entity qdi_framework.fb_4
 			generic map (
 				ASSERT_SET => A5 and B5 and C5 and D5
@@ -144,7 +147,7 @@ begin
 				Z => ko_neg
 			);
 	end generate;
-	
+
 	g3: if width = 3 generate
 		signal ko_neg : std_logic;
 	begin
@@ -152,7 +155,7 @@ begin
 		mark: if mark_ko generate
 			attribute NCL_WIRE_TYPE : string;
 			attribute NCL_WIRE_TYPE of ko_mark : label is "ACK";
-			
+
 			attribute DONT_TOUCH : boolean;
 			attribute DONT_TOUCH of ko_mark : label is true;
 		begin
@@ -163,9 +166,9 @@ begin
 					I0 => ko_neg
 				);
 		end generate;
-			
+
 		ko <= not ko_neg when negated_out else ko_neg;
-	
+
 		gate: entity qdi_framework.fb_3
 			generic map (
 				ASSERT_SET => A5 and B5 and C5
@@ -176,7 +179,7 @@ begin
 				Z => ko_neg
 			);
 	end generate;
-	
+
 	g2: if width = 2 generate
 		signal ko_neg : std_logic;
 	begin
@@ -184,7 +187,7 @@ begin
 		mark: if mark_ko generate
 			attribute NCL_WIRE_TYPE : string;
 			attribute NCL_WIRE_TYPE of ko_mark : label is "ACK";
-			
+
 			attribute DONT_TOUCH : boolean;
 			attribute DONT_TOUCH of ko_mark : label is true;
 		begin
@@ -195,9 +198,9 @@ begin
 					I0 => ko_neg
 				);
 		end generate;
-			
+
 		ko <= not ko_neg when negated_out else ko_neg;
-	
+
 		gate: entity qdi_framework.fb_2
 			generic map (
 				ASSERT_SET => A5 and B5
@@ -207,12 +210,12 @@ begin
 				Z => ko_neg
 			);
 	end generate;
-	
+
 	g1: if width = 1 generate
 		mark: if mark_ko generate
 			attribute NCL_WIRE_TYPE : string;
 			attribute NCL_WIRE_TYPE of ko_mark : label is "ACK";
-			
+
 			attribute DONT_TOUCH : boolean;
 			attribute DONT_TOUCH of ko_mark : label is true;
 		begin
@@ -223,7 +226,7 @@ begin
 					I0 => ko_vector(0)
 				);
 		end generate;
-			
+
 		ko <= not ko_vector(0) when negated_out else ko_vector(0);
 	end generate;
 end Structural;
